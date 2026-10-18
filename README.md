@@ -1,2 +1,2 @@
 # Real Estate Management System
-Team project for Multi-tier Software Development
+A web-based Real Estate Management System for an agency, supporting property registration and listings, assignment of listings to agents, client relationships, property viewings, negotiations, contracts and agency commissions. The primary users are agency secretaries and real estate agents. Clients can act as owners/landlords or potential buyers/tenants; the same person may assume different roles in different transactions. The system distinguishes properties from commercial listings, client interest from actual viewing appointments, and transactions from their resulting contracts.
