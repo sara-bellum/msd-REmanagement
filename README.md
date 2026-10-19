@@ -38,7 +38,7 @@ The project has three main areas:
 
 The database was made starting from the class diagram. Each class became a table, and the associations between classes became foreign keys. Agent shares its primary key with Persoana, because an agent is also a person. The tables AgentZona, CerereZona and AgentRezultat are used for the many-to-many relationships: the zones of an agent, the preferred zones of a request, and the agents who take part in a transaction. The states and types are saved as text, with the same values as in the class diagram.
 
-![Database Schema](diagrams/BD_schema.png)
+![Database Schema](Diagrams/BD_schema.png)
 
 # Our Team
 
