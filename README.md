@@ -163,6 +163,13 @@ Feature: Assign listing to agent (Alocare anunt la agent)
 
 # Use Case Diagrams
 
+We made one use case diagram for each area. The actors are the persons who use the application - the **secretary**, the **real estate agent**, and the **agency manager** - and the **notification service**. Owners and buyers/tenants do not use the application, so they are not actors.
+
+**Figure 2. Listing and Property Management use cases**
+![Listing and Property Management Use Case Diagram](/Diagrams/UC_Listing_and_Property_Management.png)
+
+*Creare anunt* always includes *Inregistrare proprietate*, and *Inregistrare proprietar nou* extends it when the owner is not in the system. *Alocare anunt la agent* includes the selection of the agent by zone and workload.
+
 
 # Class Diagram
 
