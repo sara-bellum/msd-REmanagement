@@ -144,7 +144,19 @@ Feature: Assign listing to agent (Alocare anunt la agent)
 
 
 # Technology stack selection
+**Context:** The application needs a web interface, a backend for business rules and listing/viewing/transaction workflows, and persistent relational data (clients, listings, viewings, transactions, contracts and commissions).
 
+**Options considered:**
+
+- **Java + Spring Boot + PostgreSQL + React** - studied in the master's programme, good support for relational data;
+- **.NET + ASP.NET Core + SQL Server + Angular** - a good framework, but the team has less experience with it;
+- **Node.js + Express + MongoDB + React** - fast to start, but MongoDB is not a good fit for data with many relations.
+
+**Proposed decision:** Java + Spring Boot + PostgreSQL + React.
+
+**Why?** Spring Boot helps organize the backend and manage the application's main functions. PostgreSQL is used to store and manage data, while React helps create an interactive and user-friendly interface. This combination also fits well with the Java technologies studied during the master's programme.
+
+**Consequences:** The application will be easier to organize, develop, and test because the frontend, backend, and database are separated. However, the team will need time to learn Spring Boot, connect the different parts of the application, and maintain them.
 
 # C4 Context Diagram
 
