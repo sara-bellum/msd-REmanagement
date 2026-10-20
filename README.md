@@ -170,6 +170,9 @@ We made one use case diagram for each area. The actors are the persons who use t
 
 *Creare anunt* always includes *Inregistrare proprietate*, and *Inregistrare proprietar nou* extends it when the owner is not in the system. *Alocare anunt la agent* includes the selection of the agent by zone and workload.
 
+![Client_and_Viewing_Management Use Case Diagram](/Diagrams/UC_Client_and_Viewing_Management.png)
+
+*Inregistrare cerere* includes *Adaugare zone preferate*. *Programare vizionare* includes *Verificare disponibilitate anunt*, and *Respingere anunt* extends *Inregistrare rezultat vizionare* when the client’s decision is RESPINGE.
 
 # Class Diagram
 
