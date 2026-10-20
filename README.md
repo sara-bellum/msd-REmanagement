@@ -173,6 +173,13 @@ We made one use case diagram for each area. The actors are the persons who use t
 
 # Class Diagram
 
+The class diagram groups the classes into the three areas of the application. Client and Viewing Management contains Persoana, Cerere, CerereZona, Interes and Vizionare, together with Cont and Notificare. Listing and Property Management contains Proprietate, Oferta, ImgOferta, Agent, Zona and AgentZona. Transaction and Contract Management contains Rezultat, PropunerePret, Contract and AgentRezultat.
+
+Agent inherits Persoana, because an agent is also a person, with extra data such as the hiring date and the base salary. The property (Proprietate) is separate from the listing (Oferta), so the same property can be listed again later. The client’s request (Cerere) shows what the client is looking for, the interest (Interes) links the client to one listing, and a viewing (Vizionare) is an appointment made for that interest. The transaction (Rezultat) keeps the price proposals, the contract and the agents who take part in it.
+
+Each object that changes its state (Oferta, Cerere, Interes, Vizionare, Rezultat, PropunerePret, Contract) has a stare attribute. The state is changed only by the object’s own methods, such as activeaza(), rezerva() or finalizeaza(), and these methods check that the change is allowed. AgentZona, CerereZona and AgentRezultat are association classes. They link an agent to the zones they cover, a request to its preferred zones, and a transaction to its agents.
+
+![Class Diagram](Diagrams/Class_diagram.png)
 
 # Database Schema
 
