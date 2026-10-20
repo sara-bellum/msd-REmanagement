@@ -19,6 +19,11 @@ The project has three main areas:
 * [Database Schema](#database-schema)
 * [Our Team](#our-team)
 
+* # Team
+- **COR** - CHELARU I LAVINIA-BIANCA
+- **COR** - CORNICIUC V SILVIU-LUCIAN
+- **COR** - IOVU CI IASMINA-IULIANA
+
 # Initial Backlog
 - **E1** - Property and Listing Management
 - **E2** - Client and Viewing Management
