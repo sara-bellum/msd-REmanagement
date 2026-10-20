@@ -251,6 +251,177 @@ Feature: Record viewing outcome (Inregistrare rezultat vizionare)
     Then the operation is rejected
     And the viewing remains in state SOLICITATA
 ```
+#### E3 - UC5_initiate_transaction.feature
+
+```gherkin
+Feature: Initiate transaction (Initiere tranzactie)
+  As a real estate agent
+  I want to initiate a transaction when the client decides to proceed after a viewing
+  So that the listing is reserved and the negotiation can start
+
+  Business rules:
+  - A transaction starts from an ACTIV interest with at least one EFECTUATA viewing.
+  - The listing must be in state ACTIVA.
+  - On initiation: the transaction is INITIAT, the listing becomes REZERVATA, the interest becomes IN_TRANZACTIE.
+  - Between 1 and 4 agents take part in a transaction, without duplicates.
+
+  Background:
+    Given the user "popescu.alex" is logged in with role AGENT_IMOBILIAR
+    And the listing "Ap 2 camere renovat Alexandru" of the owner "Dumitru Ion" is in state ACTIVA
+    And the client "Moraru Teodor" has an ACTIV interest in this listing
+
+  Scenario: Successful initiation after a completed viewing
+    Given the client has completed a viewing with the decision CONTINUA
+    When the agent initiates the transaction
+    Then the transaction is recorded in state INITIAT, of type VANZARE
+    And the listing moves to state REZERVATA
+    And the client's interest moves to state IN_TRANZACTIE
+    And the agent "Popescu Alex" takes part in the transaction with the share "1/1"
+    And the client "Moraru Teodor" and the owner "Dumitru Ion" receive a notification of type STARE_TRANZACTIE
+
+  Scenario: Initiation without a completed viewing
+    Given the client has not completed any viewing of the listing
+    When the agent initiates the transaction
+    Then the operation is rejected with the message "Clientul trebuie sa fi vizionat proprietatea inainte de tranzactie!"
+    And the listing remains in state ACTIVA
+
+  Scenario: The listing is already reserved by another transaction
+    Given the client has completed a viewing with the decision CONTINUA
+    And the listing is in state REZERVATA
+    When the agent initiates the transaction
+    Then the operation is rejected with the message "Oferta nu mai este activa!"
+
+  Scenario: Adding participating agents
+    Given the transaction for the listing is in state INITIAT with the agent "Popescu Alex"
+    When the agent adds the participants "Ionescu Maria", "Georgescu Andrei" and "Dumitru Ioana"
+    Then 4 agents take part in the transaction, each with the share "1/4"
+    When the agent tries to add the participant "Matei Radu"
+    Then the operation is rejected with the message "Nu se pot adauga mai mult de 4 agenti la un rezultat!"
+```
+
+#### E3 - UC6_price_negotiation.feature
+
+```gherkin
+Feature: Price negotiation (Negociere pret)
+  As a real estate agent
+  I want to record the price proposals and counteroffers between the buyer and the owner
+  So that the parties reach an agreed price
+
+  Business rules:
+  - The first financial proposal is made by the buyer or tenant.
+  - A counteroffer always comes from the other party; the previous proposal becomes CONTRAPROPUSA.
+  - Only one proposal can be IN_ASTEPTARE at a time.
+  - Acceptance sets the agreed price and moves the transaction to CONVENIT.
+  - The party receiving a proposal is notified.
+
+  Background:
+    Given the user "popescu.alex" is logged in with role AGENT_IMOBILIAR
+    And the transaction between the buyer "Moraru Teodor" and the owner "Dumitru Ion" is in state INITIAT
+
+  Scenario: Negotiation with a counteroffer and acceptance
+    When the agent records the buyer's proposal of 78000
+    Then the proposal is IN_ASTEPTARE and the transaction moves to state NEGOCIERE
+    And the owner "Dumitru Ion" receives a notification of type PROPUNERE_PRET
+    When the agent records the owner's counteroffer of 83000
+    Then the proposal of 78000 becomes CONTRAPROPUSA
+    And the buyer "Moraru Teodor" receives a notification of type PROPUNERE_PRET
+    When the agent records the acceptance of the proposal
+    Then the proposal of 83000 becomes ACCEPTATA
+    And the agreed price of the transaction is 83000
+    And the transaction moves to state CONVENIT
+    And both parties receive a notification that the price was accepted
+
+  Scenario: Rejecting a proposal
+    Given the agent has recorded the buyer's proposal of 70000
+    When the agent records the rejection of the proposal
+    Then the proposal becomes RESPINSA
+    And the buyer "Moraru Teodor" receives a notification that the proposal was rejected
+    And the transaction remains in state NEGOCIERE
+
+  Scenario: The first proposal cannot come from the owner
+    When the agent records an owner's proposal of 90000
+    Then the operation is rejected with the message "Prima propunere financiara este facuta de cumparator / chirias!"
+
+  Scenario: The same party cannot propose twice without an answer
+    Given the agent has recorded the buyer's proposal of 78000
+    When the agent records another buyer's proposal of 79000
+    Then the operation is rejected
+    And the proposal of 78000 remains IN_ASTEPTARE
+
+  Scenario: Negotiation without agreement leads to cancelling the transaction
+    Given the agent has recorded the buyer's proposal of 60000
+    And the proposal was rejected
+    When the agent cancels the transaction with the reason "Partile nu au ajuns la un acord asupra pretului"
+    Then the transaction moves to state ANULAT
+    And the listing becomes ACTIVA again
+    And the client's interest becomes ACTIV again
+```
+
+#### E3 - UC7_complete_transaction.feature
+
+```gherkin
+Feature: Complete transaction (Finalizare tranzactie)
+  As a real estate agent
+  I want to complete the transaction after the contract is signed and the financial obligations are paid
+  So that the listing is marked as sold or rented and the commissions are calculated
+
+  Business rules:
+  - Only a transaction in state SEMNAT can be completed.
+  - The advance payment set in the contract and the agency commissions (buyer, seller) must be paid.
+  - The completion date cannot be earlier than the initiation date.
+  - On completion: the listing becomes VANDUTA / INCHIRIATA, the interest FINALIZAT, the related request SATISFACUTA.
+  - For a sale the contract becomes FINALIZAT; for a rental the contract remains ACTIV for the rental period.
+  - The agents split equally 40% of the agency's total commission.
+
+  Background:
+    Given the user "popescu.alex" is logged in with role AGENT_IMOBILIAR
+    And the VANZARE transaction for the listing "Ap 2 camere renovat Alexandru" has a signed contract
+    And the transaction is in state SEMNAT, with the buyer's commission 1500 and the seller's commission 1500
+    And the agents "Popescu Alex" and "Ionescu Maria" take part in the transaction
+
+  Scenario: Successfully complete a sale
+    Given the advance payment of 8300 set in the contract has been paid
+    And both commissions have been paid
+    When the agent completes the transaction
+    Then the transaction moves to state FINALIZAT
+    And the contract moves to state FINALIZAT
+    And the listing moves to state VANDUTA
+    And the client's interest moves to state FINALIZAT
+    And the client's request moves to state SATISFACUTA
+    And each agent receives a commission of 600
+    And the client and the owner receive a notification of type STARE_TRANZACTIE
+
+  Scenario Outline: Completion is blocked by unpaid financial obligations
+    Given the advance paid is "<advance_paid>"
+    And the buyer's commission paid is "<buyer_paid>"
+    And the seller's commission paid is "<seller_paid>"
+    When the agent completes the transaction
+    Then the operation is rejected with the message "<message>"
+    And the transaction remains in state SEMNAT
+
+    Examples:
+      | advance_paid | buyer_paid | seller_paid | message                                            |
+      | no           | yes        | yes         | Avansul prevazut in contract nu a fost platit!     |
+      | yes          | no         | yes         | Comisioanele agentiei nu au fost platite integral! |
+      | yes          | yes        | no          | Comisioanele agentiei nu au fost platite integral! |
+
+  Scenario: Completing a rental keeps the contract active
+    Given the INCHIRIERE transaction for the listing "Garsoniera Centru langa universitate" is in state SEMNAT
+    And the contract sets no advance payment
+    And the tenant's commission of 400 has been paid
+    When the agent completes the transaction
+    Then the transaction moves to state FINALIZAT
+    And the listing moves to state INCHIRIATA
+    And the contract remains in state ACTIV
+
+  Scenario: Transaction without a signed contract
+    Given the transaction is in state CONVENIT
+    When the agent completes the transaction
+    Then the operation is rejected
+    And the listing remains in state REZERVATA
+```
+
+
 
 # Technology stack selection
 **Context:** The application needs a web interface, a backend for business rules and listing/viewing/transaction workflows, and persistent relational data (clients, listings, viewings, transactions, contracts and commissions).
