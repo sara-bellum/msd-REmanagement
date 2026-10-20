@@ -457,6 +457,11 @@ We made one use case diagram for each area. The actors are the persons who use t
 
 *Inregistrare cerere* includes *Adaugare zone preferate*. *Programare vizionare* includes *Verificare disponibilitate anunt*, and *Respingere anunt* extends *Inregistrare rezultat vizionare* when the client’s decision is RESPINGE.
 
+
+![Transaction_and_Contract_Management_Diagram](/Diagrams/UC_Transaction_and_Contract_Management.png)
+
+Initiere tranzactie includes Verificare vizionare efectuata. Finalizare tranzactie includes the verification of the financial obligations, the calculation of the agents’ commissions and the notifications.
+
 # Class Diagram
 
 The class diagram groups the classes into the three areas of the application. Client and Viewing Management contains Persoana, Cerere, CerereZona, Interes and Vizionare, together with Cont and Notificare. Listing and Property Management contains Proprietate, Oferta, ImgOferta, Agent, Zona and AgentZona. Transaction and Contract Management contains Rezultat, PropunerePret, Contract and AgentRezultat.
