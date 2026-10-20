@@ -442,7 +442,7 @@ Feature: Complete transaction (Finalizare tranzactie)
 
 The secretary registers clients, properties, and listings. Agents manage viewings, negotiations, and contracts. The manager can manage agents and view reports. Owners, buyers, and tenants contact agency staff instead of using the software themselves; they only receive notifications by email or SMS.
 Agency staff use the React interface. React sends requests to the backend through a REST API, and the backend reads and saves data in PostgreSQL.
-![C4 Context Diagram](/Diagrams/C4_Context.png)
+![C4_Context_Diagram](/Diagrams/C4_context.png)
 
 # Use Case Diagrams
 
