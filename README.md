@@ -141,7 +141,111 @@ Feature: Assign listing to agent (Alocare anunt la agent)
       | INCHIRIATA |
       | ARHIVATA   |
 ```
+#### E2 - UC3_schedule_viewing.feature
 
+```gherkin
+Feature: Schedule viewing (Programare vizionare)
+  As a real estate agent
+  I want to schedule viewings for clients interested in a listing
+  So that they can see the property before deciding
+
+  Business rules:
+  - Viewings are scheduled only for listings in state ACTIVA.
+  - A viewing starts from an ACTIV interest of the client in that listing.
+  - The owner cannot be interested in their own property.
+  - An interest can have only one scheduled viewing (SOLICITATA or CONFIRMATA) at a time.
+
+  Background:
+    Given the user "popescu.alex" is logged in with role AGENT_IMOBILIAR
+    And the listing "Ap 2 camere renovat Alexandru" is in state ACTIVA
+    And the client "Moraru Teodor" is registered in the system
+
+  Scenario: Successfully schedule a viewing
+    Given the client "Moraru Teodor" has expressed interest in the listing
+    When the agent schedules a viewing on "2026-10-20" at "17:00"
+    Then the viewing is recorded in state SOLICITATA
+    And the agent "Popescu Alex" receives a notification of type STARE_VIZIONARE
+
+  Scenario: Confirming the viewing notifies the client
+    Given there is a viewing in state SOLICITATA for the client "Moraru Teodor"
+    When the agent confirms the viewing
+    Then the viewing moves to state CONFIRMATA
+    And the client "Moraru Teodor" receives a notification of type STARE_VIZIONARE
+
+  Scenario: Reschedule a confirmed viewing
+    Given there is a viewing in state CONFIRMATA on "2026-10-20" at "17:00"
+    When the agent reschedules the viewing to "2026-10-21" at "18:00"
+    Then the viewing returns to state SOLICITATA with the new date
+    And the client receives a notification about the rescheduling
+
+  Scenario: Viewing for a listing that is no longer active
+    Given the listing "Ap 2 camere renovat Alexandru" is in state REZERVATA
+    When the agent tries to schedule a viewing for the client "Moraru Teodor"
+    Then the operation is rejected with the message "Oferta nu mai este activa!"
+
+  Scenario: A second viewing scheduled for the same interest
+    Given there is a viewing in state CONFIRMATA for the client "Moraru Teodor"
+    When the agent tries to schedule another viewing for the same interest
+    Then the operation is rejected with the message "Exista deja o vizionare programata pentru acest interes!"
+
+  Scenario: The owner cannot view their own property
+    When the agent records the interest of the owner "Dumitru Ion" in their own listing
+    Then the operation is rejected with the message "Proprietarul nu poate fi interesat de propria proprietate!"
+```
+
+#### E2 - UC4_record_viewing_outcome.feature
+
+```gherkin
+Feature: Record viewing outcome (Inregistrare rezultat vizionare)
+  As a real estate agent
+  I want to record the client's feedback and decision after a viewing
+  So that the owner is informed and the next step can be decided
+
+  Business rules:
+  - The outcome is recorded only for a CONFIRMATA viewing.
+  - The level of interest is a number between 1 and 5.
+  - The client's decision is one of: RESPINGE, ALTA_VIZIONARE, CERE_INFORMATII, CONTINUA.
+  - If the decision is RESPINGE, the client's interest becomes RESPINS.
+  - The owner receives the viewing feedback.
+
+  Background:
+    Given the user "popescu.alex" is logged in with role AGENT_IMOBILIAR
+    And the client "Moraru Teodor" has a viewing in state CONFIRMATA for the listing "Ap 2 camere renovat Alexandru"
+
+  Scenario Outline: Record the outcome according to the client's decision
+    When the agent records the feedback "<feedback>", the level of interest <level> and the decision <decision>
+    Then the viewing moves to state EFECTUATA
+    And the owner "Dumitru Ion" receives a notification with the viewing feedback
+    And the client's interest is in state <interest_state>
+
+    Examples:
+      | feedback                        | level | decision        | interest_state |
+      | Wants to negotiate the price    | 5     | CONTINUA        | ACTIV          |
+      | Asks for details about papers   | 4     | CERE_INFORMATII | ACTIV          |
+      | Wants to see the flat again     | 3     | ALTA_VIZIONARE  | ACTIV          |
+      | Too noisy, not interested       | 1     | RESPINGE        | RESPINS        |
+
+  Scenario: The client did not show up for the viewing
+    When the agent marks the viewing as a no-show
+    Then the viewing moves to state NEPREZENTARE
+    And the client's interest remains ACTIV
+
+  Scenario Outline: Invalid level of interest
+    When the agent records the level of interest <level> and the decision CONTINUA
+    Then the operation is rejected with the message "Nivelul de interes trebuie sa fie intre 1 si 5!"
+    And the viewing remains in state CONFIRMATA
+
+    Examples:
+      | level |
+      | 0     |
+      | 6     |
+
+  Scenario: Outcome for an unconfirmed viewing
+    Given the viewing of the client "Moraru Teodor" is in state SOLICITATA
+    When the agent tries to record the viewing outcome
+    Then the operation is rejected
+    And the viewing remains in state SOLICITATA
+```
 
 # Technology stack selection
 **Context:** The application needs a web interface, a backend for business rules and listing/viewing/transaction workflows, and persistent relational data (clients, listings, viewings, transactions, contracts and commissions).
