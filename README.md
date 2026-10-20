@@ -19,7 +19,7 @@ The project has three main areas:
 * [Database Schema](#database-schema)
 * [Our Team](#our-team)
 
-# Team
+# Our Team
 - CHELARU I LAVINIA-BIANCA
 - CORNICIUC V SILVIU-LUCIAN
 - IOVU CI IASMINA-IULIANA
@@ -478,6 +478,6 @@ The database was made starting from the class diagram. Each class became a table
 
 ![Database Schema](Diagrams/BD_schema.png)
 
-# Our Team
+
 
 
