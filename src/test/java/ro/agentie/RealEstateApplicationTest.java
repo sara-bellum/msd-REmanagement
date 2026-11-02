@@ -7,6 +7,5 @@ import org.springframework.boot.test.context.SpringBootTest;
 class RealEstateApplicationTest {
 
     @Test
-    void contextLoads() {
-    }
+    void contextLoads() {}
 }
