@@ -9,7 +9,8 @@ import ro.agentie.domain.listing.*;
 import ro.agentie.domain.shared.*;
 import ro.agentie.infrastructure.*;
 import ro.agentie.services.*;
-
+// One listing use case commits or rolls back all related database changes together.
+@org.springframework.transaction.annotation.Transactional
 @Service
 public class ListingApplicationService implements IListingWorkflowService {
     private final IOfertaEntityRepository oferte;
