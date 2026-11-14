@@ -1,10 +1,21 @@
 package ro.agentie.domain.client;
 
+import jakarta.persistence.*;
 import ro.agentie.domain.shared.*;
 
-public final class CerereZona extends Entitate {
-    private final Zona zona;
-    private final int prioritate;
+// Preference data belongs to a request; the referenced zone has its own lifecycle.
+@Entity
+@Table(name = "cerere_zone")
+public class CerereZona extends Entitate {
+    // Required for JPA hydration; normal creation uses the validated domain constructor.
+    protected CerereZona() {}
+
+    // Reference an existing entity without cascading its deletion from this object.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zona_id", nullable = false)
+    private Zona zona;
+
+    private int prioritate;
 
     public CerereZona(Integer id, Zona zona, int prioritate) {
         super(id);

@@ -1,20 +1,53 @@
 package ro.agentie.domain.client;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import ro.agentie.domain.listing.*;
 import ro.agentie.domain.shared.*;
 
+// A request is an aggregate root: preferred zones are its children, while the client is shared.
+@Entity
+@Table(name = "cereri", uniqueConstraints = @UniqueConstraint(columnNames = "domain_id"))
 public class Cerere extends Entitate {
-    private final Persoana client;
-    private final TipCerere tipCerere;
-    private final TipProprietate tipProprietate;
-    private final BigDecimal bugetMin, bugetMax, suprafataDorita;
-    private final int nrCamereDorite;
-    private final LocalDate dataCerere;
+    // Required for JPA hydration; normal creation uses the validated domain constructor.
+    protected Cerere() {}
+
+    // Reference an existing entity without cascading its deletion from this object.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", nullable = false)
+    private Persoana client;
+
+    // Store enum names so reordering enum constants does not change saved values.
+    @Enumerated(EnumType.STRING)
+    private TipCerere tipCerere;
+
+    // Store enum names so reordering enum constants does not change saved values.
+    @Enumerated(EnumType.STRING)
+    private TipProprietate tipProprietate;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal bugetMin;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal bugetMax;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal suprafataDorita;
+
+    private int nrCamereDorite;
+    private LocalDate dataCerere;
+
+    // Store enum names so reordering enum constants does not change saved values.
+    @Enumerated(EnumType.STRING)
     private StareCerere stare = StareCerere.NOUA;
-    private final List<CerereZona> zone = new ArrayList<>();
+
+    // Cascade owned children; removing a child from this collection deletes its row.
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "cerere_id")
+    @OrderBy("domainId ASC")
+    private List<CerereZona> zone = new ArrayList<>();
 
     public Cerere(
             Integer id,
@@ -39,6 +72,7 @@ public class Cerere extends Entitate {
         dataCerere = Objects.requireNonNull(data);
     }
 
+    // The child domain ID is local to this request; Entitate supplies its separate database key.
     public CerereZona adaugaZonaPreferata(Zona zona, int prioritate) {
         Reguli.cere(
                 stare == StareCerere.NOUA || stare == StareCerere.ACTIVA,
@@ -66,6 +100,7 @@ public class Cerere extends Entitate {
         stare = StareCerere.ANULATA;
     }
 
+    // Matching remains a domain rule; JPA annotations must not change its conditions.
     public boolean estePotrivitaCu(Oferta o) {
         if (o == null
                 || stare != StareCerere.ACTIVA
