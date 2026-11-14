@@ -22,7 +22,8 @@ import ro.agentie.domain.shared.*;
 import ro.agentie.domain.transaction.*;
 import ro.agentie.infrastructure.*;
 import ro.agentie.services.*;
-
+// This test verifies the original domain workflow independently of database availability.
+@org.springframework.test.context.ActiveProfiles("memory")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class WorkflowIntegrationTest {

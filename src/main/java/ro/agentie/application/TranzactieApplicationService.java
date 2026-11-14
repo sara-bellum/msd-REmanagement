@@ -8,7 +8,10 @@ import org.springframework.stereotype.Service;
 import ro.agentie.application.events.WorkflowEvent;
 import ro.agentie.domain.transaction.*;
 import ro.agentie.infrastructure.*;
-
+// Only the legacy memory profile registers this implementation.
+// PostgreSQL uses a separate adapter for the same application-facing interface.
+@org.springframework.context.annotation.Profile("memory")
+@org.springframework.transaction.annotation.Transactional
 @Service
 public class TranzactieApplicationService implements ITranzactieWorkflowService {
     private final IRezultatEntityRepository rezultate;

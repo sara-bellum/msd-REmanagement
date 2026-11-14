@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import ro.agentie.domain.client.*;
 import ro.agentie.domain.listing.*;
 import ro.agentie.infrastructure.*;
-
+@org.springframework.test.context.ActiveProfiles("memory")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class FactorySampleDataTest {
     @Autowired IRealEstateEntityFactory factory;
