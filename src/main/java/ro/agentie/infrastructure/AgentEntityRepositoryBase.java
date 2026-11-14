@@ -3,6 +3,9 @@ package ro.agentie.infrastructure;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 import ro.agentie.domain.shared.*;
+// Only the legacy memory profile registers this implementation.
+// PostgreSQL uses a separate adapter for the same application-facing interface.
+@org.springframework.context.annotation.Profile("memory")
 
 @Repository
 public class AgentEntityRepositoryBase implements IAgentEntityRepository {

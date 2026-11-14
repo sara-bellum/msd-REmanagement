@@ -8,8 +8,10 @@ import ro.agentie.domain.client.*;
 import ro.agentie.domain.listing.*;
 import ro.agentie.domain.shared.*;
 import ro.agentie.domain.transaction.Rezultat;
-
-/** Builds domain objects and initializes sample entities, as in the course example. */
+// Only the legacy memory profile registers this implementation.
+// PostgreSQL uses a separate adapter for the same application-facing interface.
+/** Builds domain objects and initializes sample entities */
+@org.springframework.context.annotation.Profile("memory")
 @Component
 public class RealEstateEntityFactory implements IRealEstateEntityFactory {
     private final IPersoanaEntityRepository persoane;
