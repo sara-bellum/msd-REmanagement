@@ -13,20 +13,38 @@ jobs:
   build:
     name: Build and test
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
+    # Each CI job owns an isolated PostgreSQL instance; no shared database is contacted.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: real_estate_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d real_estate_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      # CI publishes PostgreSQL on 5432; the local test container uses host port 5433.
+      TEST_DB_URL: jdbc:postgresql://localhost:5432/real_estate_test
+      TEST_DB_USERNAME: test
+      TEST_DB_PASSWORD: test
     steps:
       - name: Download repository code
         uses: actions/checkout@v7
-
       - name: Set up Java 25
         uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
-
+      # Linux requires execute permission for the wrapper script.
       - name: Allow Maven Wrapper to execute
         run: chmod +x mvnw
-
-      - name: Build and run tests
+      - name: Build and run all tests
         run: ./mvnw --batch-mode clean verify
