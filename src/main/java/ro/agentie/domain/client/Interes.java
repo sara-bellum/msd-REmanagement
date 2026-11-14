@@ -1,18 +1,46 @@
 package ro.agentie.domain.client;
 
+import jakarta.persistence.*;
 import java.time.*;
 import java.util.*;
 import ro.agentie.domain.listing.*;
 import ro.agentie.domain.shared.*;
 
+// An interest links one client to a listing and optionally to a request; it owns its viewings.
+@Entity
+@Table(name = "interese", uniqueConstraints = @UniqueConstraint(columnNames = "domain_id"))
 public class Interes extends Entitate {
-    private final Persoana client;
-    private final Oferta oferta;
-    private final Cerere cerere;
-    private final LocalDate dataInteres;
+    // Required for JPA hydration; normal creation uses the validated domain constructor.
+    protected Interes() {}
+
+    // Reference an existing entity without cascading its deletion from this object.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", nullable = false)
+    private Persoana client;
+
+    // Reference an existing entity without cascading its deletion from this object.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "oferta_id", nullable = false)
+    private Oferta oferta;
+
+    // Reference an existing entity without cascading its deletion from this object.
+    @ManyToOne(fetch = FetchType.LAZY)
+    // A client may express interest without first registering a request.
+    @JoinColumn(name = "cerere_id", nullable = true)
+    private Cerere cerere;
+
+    private LocalDate dataInteres;
     private String observatii;
+
+    // Store enum names so reordering enum constants does not change saved values.
+    @Enumerated(EnumType.STRING)
     private StareInteres stare = StareInteres.ACTIV;
-    private final List<Vizionare> vizionari = new ArrayList<>();
+
+    // Cascade owned children; removing a child from this collection deletes its row.
+    // The child field named in mappedBy owns the foreign-key relationship.
+    @OneToMany(mappedBy = "interes", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("domainId ASC")
+    private List<Vizionare> vizionari = new ArrayList<>();
 
     public Interes(
             Integer id,
@@ -42,6 +70,7 @@ public class Interes extends Entitate {
         this.observatii = observatii;
     }
 
+    // Add the child through the aggregate so its interest link and local ID stay consistent.
     public Vizionare programeazaVizionare(Agent agent, LocalDateTime dataOra) {
         Reguli.cere(stare == StareInteres.ACTIV, "Interesul nu este activ!");
         Reguli.cere(oferta.esteDisponibila(), "Oferta nu mai este activa!");
@@ -60,6 +89,7 @@ public class Interes extends Entitate {
         return vizionari.stream().anyMatch(v -> v.getStare() == StareVizionare.EFECTUATA);
     }
 
+    // A completed viewing and an active interest are prerequisites for a transaction.
     public void verificaIntrareInTranzactie() {
         Reguli.cere(stare == StareInteres.ACTIV, "Interesul nu este activ!");
         Reguli.cere(
