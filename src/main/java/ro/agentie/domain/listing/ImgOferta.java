@@ -1,11 +1,17 @@
 package ro.agentie.domain.listing;
 
+import jakarta.persistence.*;
 import java.time.LocalDate;
 import ro.agentie.domain.shared.*;
 
-public final class ImgOferta extends Entitate {
-    private final String url, descriere;
-    private final LocalDate dataIncarcare;
+// Image metadata belongs to its listing; removing it must not remove the property.
+@Entity
+@Table(name = "imagini_oferte")
+public class ImgOferta extends Entitate {
+    protected ImgOferta() {}
+
+    private String url, descriere;
+    private LocalDate dataIncarcare;
     private int ordineAfisare;
     private boolean estePrincipala;
 

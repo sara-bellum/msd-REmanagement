@@ -1,16 +1,26 @@
 package ro.agentie.domain.shared;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.util.*;
 import ro.agentie.domain.listing.Oferta;
 
+// A person is stored once; Agent extends the same identity through JOINED inheritance.
+@Entity
+@Table(name = "persoane", uniqueConstraints = @UniqueConstraint(columnNames = "domain_id"))
+// Parent and subclass rows share one primary key rather than duplicate person data.
+@Inheritance(strategy = InheritanceType.JOINED)
 public class Persoana extends Entitate {
+    protected Persoana() {}
+
     @NotBlank private String nume;
     @NotBlank private String prenume;
     private String telefon;
     @Email private String email;
     private String adresa;
-    private final TipPersoana tipPersoana;
+
+    @Enumerated(EnumType.STRING)
+    private TipPersoana tipPersoana;
 
     public Persoana(
             Integer id,

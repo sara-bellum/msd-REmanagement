@@ -1,11 +1,21 @@
 package ro.agentie.domain.shared;
 
+import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.Objects;
 
-public final class AgentZona extends Entitate {
-    private final Zona zona;
-    private final LocalDate dataInceput;
+// This assignment belongs to an agent and references a shared geographical zone.
+@Entity
+@Table(name = "agent_zone")
+public class AgentZona extends Entitate {
+    protected AgentZona() {}
+
+    // This is a reference to an independently managed entity; no delete cascade is configured.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zona_id", nullable = false)
+    private Zona zona;
+
+    private LocalDate dataInceput;
     private LocalDate dataSfarsit;
     private boolean zonaActiva = true;
 
