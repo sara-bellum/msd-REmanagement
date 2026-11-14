@@ -36,7 +36,7 @@ class FlywayMigrationTest {
         // No application context: this test can run before every JPA domain is mapped.
         Flyway flyway = Flyway.configure()
                 .dataSource(url, user, password)
-                .locations("classpath:db.migration")
+                .locations("classpath:db/migration")
                 .cleanDisabled(true)
                 .load();
         flyway.migrate();
