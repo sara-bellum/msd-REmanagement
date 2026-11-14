@@ -1,16 +1,38 @@
 package ro.agentie.domain.client;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import ro.agentie.domain.shared.*;
 
-public final class Vizionare extends Entitate {
-    private final Interes interes;
-    private final Agent agent;
+// A viewing is saved through its parent interest, not through a separate repository.
+@Entity
+@Table(name = "vizionari")
+public class Vizionare extends Entitate {
+    // Required for JPA hydration; normal creation uses the validated domain constructor.
+    protected Vizionare() {}
+
+    // Reference an existing entity without cascading its deletion from this object.
+    @ManyToOne(fetch = FetchType.LAZY)
+    // This is the owning side of Interes.vizionari; its value becomes the SQL foreign key.
+    @JoinColumn(name = "interes_id", nullable = false)
+    private Interes interes;
+
+    // Reference an existing entity without cascading its deletion from this object.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "agent_id", nullable = false)
+    private Agent agent;
+
     private LocalDateTime dataOra;
     private String note, feedback;
     private Integer nivelInteres;
+
+    // Store enum names so reordering enum constants does not change saved values.
+    @Enumerated(EnumType.STRING)
     private DecizieClient decizie;
+
+    // Store enum names so reordering enum constants does not change saved values.
+    @Enumerated(EnumType.STRING)
     private StareVizionare stare = StareVizionare.SOLICITATA;
 
     Vizionare(Integer id, Interes interes, Agent agent, LocalDateTime data) {
