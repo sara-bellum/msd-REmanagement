@@ -12,6 +12,7 @@ import ro.agentie.domain.shared.*;
 import ro.agentie.infrastructure.*;
 import ro.agentie.services.IValidatingDomainService;
 
+@org.springframework.transaction.annotation.Transactional
 @Service
 public class ClientApplicationService implements IClientWorkflowService {
     private final IPersoanaEntityRepository persoane;
