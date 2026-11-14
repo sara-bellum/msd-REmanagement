@@ -1,18 +1,33 @@
 package ro.agentie.domain.listing;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.Objects;
 import ro.agentie.domain.shared.*;
 
+// A property references an existing owner and zone, each with an independent lifecycle.
+@Entity
+@Table(name = "proprietati", uniqueConstraints = @UniqueConstraint(columnNames = "domain_id"))
 public class Proprietate extends Entitate {
-    private final Persoana proprietar;
-    private final Zona zona;
-    private final TipProprietate tipProprietate;
-    @NotBlank private final String adresa;
-    @Positive private final BigDecimal suprafata;
-    private final int numarCamere, etaj;
-    private final String facilitati, descriere;
+    protected Proprietate() {}
+
+    // This is a reference to an independently managed entity; no delete cascade is configured.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proprietar_id", nullable = false)
+    private Persoana proprietar;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zona_id", nullable = false)
+    private Zona zona;
+
+    @Enumerated(EnumType.STRING)
+    private TipProprietate tipProprietate;
+
+    @NotBlank private String adresa;
+    @Positive private BigDecimal suprafata;
+    private int numarCamere, etaj;
+    private String facilitati, descriere;
 
     public Proprietate(
             Integer id,

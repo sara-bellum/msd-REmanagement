@@ -1,7 +1,14 @@
 package ro.agentie.domain.shared;
 
-public final class Zona extends Entitate {
-    private final String numeZona, localitate, judet;
+import jakarta.persistence.*;
+
+// Zones are shared reference entities and must not be deleted with a listing.
+@Entity
+@Table(name = "zone", uniqueConstraints = @UniqueConstraint(columnNames = "domain_id"))
+public class Zona extends Entitate {
+    protected Zona() {}
+
+    private String numeZona, localitate, judet;
 
     public Zona(Integer id, String nume, String localitate, String judet) {
         super(id);

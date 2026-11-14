@@ -1,16 +1,32 @@
 package ro.agentie.domain.shared;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import ro.agentie.domain.listing.*;
 
+// Agent-specific data extends a person, while listings remain separate aggregate roots.
+@Entity
+@Table(name = "agenti")
 public class Agent extends Persoana {
-    private final LocalDate dataAngajare;
-    private final BigDecimal salariuBaza;
-    private final List<AgentZona> zone = new ArrayList<>();
-    private final Set<Oferta> portofoliu = new LinkedHashSet<>();
+    protected Agent() {}
+
+    private LocalDate dataAngajare;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal salariuBaza;
+
+    // Owned child rows follow the parent lifecycle and are deleted when removed from this collection.
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "agent_id")
+    @OrderBy("domainId ASC")
+    private List<AgentZona> zone = new ArrayList<>();
+
+    // Oferta.agent owns the link; this portfolio is the inverse side.
+    @OneToMany(mappedBy = "agent")
+    private Set<Oferta> portofoliu = new LinkedHashSet<>();
 
     public Agent(
             Integer id,
@@ -41,12 +57,12 @@ public class Agent extends Persoana {
 
     /** Called only after Oferta has accepted the assignment; avoids a second source of truth. */
     public void inregistreazaInPortofoliu(Oferta oferta) {
-        Reguli.cere(oferta.getAgent() == this, "Oferta nu este alocata acestui agent!");
+        Reguli.cere(this.equals(oferta.getAgent()), "Oferta nu este alocata acestui agent!");
         portofoliu.add(oferta);
     }
 
     public void eliminaDinPortofoliu(Oferta oferta) {
-        Reguli.cere(oferta.getAgent() != this, "Oferta este inca alocata agentului!");
+        Reguli.cere(!this.equals(oferta.getAgent()), "Oferta este inca alocata agentului!");
         portofoliu.remove(oferta);
     }
 

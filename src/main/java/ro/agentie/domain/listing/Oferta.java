@@ -1,22 +1,45 @@
 package ro.agentie.domain.listing;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import ro.agentie.domain.shared.*;
 
+// The listing owns its images but only references the property and assigned agent.
+@Entity
+@Table(name = "oferte", uniqueConstraints = @UniqueConstraint(columnNames = "domain_id"))
 public class Oferta extends Entitate {
-    private final Proprietate proprietate;
-    private final TipOferta tipOferta;
+    protected Oferta() {}
+
+    // This is a reference to an independently managed entity; no delete cascade is configured.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proprietate_id", nullable = false)
+    private Proprietate proprietate;
+
+    @Enumerated(EnumType.STRING)
+    private TipOferta tipOferta;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "agent_id", nullable = true)
     private Agent agent;
+
     @NotBlank private String descriereScurta;
     @Positive private BigDecimal pretListare;
-    private final LocalDate dataCreare;
+    private LocalDate dataCreare;
+
+    @Enumerated(EnumType.STRING)
     private StareOferta stare = StareOferta.NOUA;
+
     private Integer tranzactieRezervare;
     private int nextImage;
-    private final List<ImgOferta> imagini = new ArrayList<>();
+
+    // Owned child rows follow the parent lifecycle and are deleted when removed from this collection.
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "oferta_id")
+    @OrderBy("domainId ASC")
+    private List<ImgOferta> imagini = new ArrayList<>();
 
     public Oferta(
             Integer id,
@@ -42,7 +65,7 @@ public class Oferta extends Entitate {
         Reguli.cere(!nou.esteProprietarul(this), "Agentul nu poate gestiona propria proprietate!");
         Agent vechi = agent;
         agent = nou;
-        if (vechi != null && vechi != nou) vechi.eliminaDinPortofoliu(this);
+        if (vechi != null && !vechi.equals(nou)) vechi.eliminaDinPortofoliu(this);
         nou.inregistreazaInPortofoliu(this);
         if (stare == StareOferta.NOUA) stare = StareOferta.ALOCATA;
     }
