@@ -1,5 +1,6 @@
 package ro.agentie.domain.transaction;
 
+import jakarta.persistence.*;
 import java.math.*;
 import java.time.LocalDate;
 import java.util.*;
@@ -8,20 +9,86 @@ import ro.agentie.domain.listing.*;
 import ro.agentie.domain.shared.*;
 
 /** Aggregate root for negotiation, contract and participants. No public state setters. */
+// Only transaction initiation, reservation and cancellation are persistent in this delivery.
+@Entity
+@Table(name = "rezultate", uniqueConstraints = @UniqueConstraint(columnNames = "domain_id"))
 public class Rezultat extends Entitate {
-    private final Interes interes;
-    private final Agent agentResponsabil;
-    private final TipRezultat tipRezultat;
-    private final LocalDate dataRezultat;
+    // Required for JPA hydration; normal creation uses the validated domain constructor.
+    protected Rezultat() {}
+
+    // Reference an existing entity without cascading its deletion from this object.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "interes_id", nullable = false)
+    private Interes interes;
+
+    // Reference an existing entity without cascading its deletion from this object.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "agent_responsabil_id", nullable = false)
+    private Agent agentResponsabil;
+
+    // Store enum names so reordering enum constants does not change saved values.
+    @Enumerated(EnumType.STRING)
+    private TipRezultat tipRezultat;
+
+    private LocalDate dataRezultat;
     private LocalDate dataFinalizare;
+
+    @Column(precision = 19, scale = 2)
     private BigDecimal pretConvenit;
-    private BigDecimal comisionCumparator = BigDecimal.ZERO, comisionVanzator = BigDecimal.ZERO;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal comisionCumparator = BigDecimal.ZERO;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal comisionVanzator = BigDecimal.ZERO;
+
     private boolean comisionCumparatorPlatit, comisionVanzatorPlatit;
     private String motivAnulare;
+
+    // Store enum names so reordering enum constants does not change saved values.
+    @Enumerated(EnumType.STRING)
     private StareRezultat stare = StareRezultat.INITIAT;
-    private Contract contract;
-    private final List<PropunerePret> propuneri = new ArrayList<>();
-    private final List<AgentRezultat> participanti = new ArrayList<>();
+
+    // These advanced objects are deliberately unmapped; guards prevent silently losing their state.
+    @Transient private Contract contract;
+    @Transient private List<PropunerePret> propuneri = new ArrayList<>();
+
+    // Cascade owned children; removing a child from this collection deletes its row.
+    // The child field named in mappedBy owns the foreign-key relationship.
+    @OneToMany(mappedBy = "rezultat", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("domainId ASC")
+    private List<AgentRezultat> participanti = new ArrayList<>();
+
+    // Validate the minimal persistence scope before insert or update reaches the database.
+    @PrePersist
+    @PreUpdate
+    private void verificaScopPersistenta() {
+        Reguli.cere(
+                (stare == StareRezultat.INITIAT || stare == StareRezultat.ANULAT)
+                        && contract == null
+                        && propuneri.isEmpty()
+                        && pretConvenit == null
+                        && comisionCumparator.signum() == 0
+                        && comisionVanzator.signum() == 0,
+                "Doar initierea si anularea tranzactiilor sunt persistente in aceasta etapa.");
+    }
+
+    // Runtime capability flag, not a stored business column.
+    @Transient private boolean persistentaMinima;
+
+    // After loading or first persistence, block advanced mutations that cannot be stored yet.
+    @PostLoad
+    @PostPersist
+    private void limitePersistenta() {
+        persistentaMinima = true;
+    }
+
+    // Memory workflows keep their original capabilities; persisted results enforce the minimal scope.
+    private void necesitaPersistentaCompleta() {
+        Reguli.cere(
+                !persistentaMinima,
+                "Persistenta negocierii, contractelor si platilor nu este implementata in aceasta etapa.");
+    }
 
     public Rezultat(Integer id, Interes interes, Agent agent, LocalDate data) {
         super(id);
@@ -37,6 +104,7 @@ public class Rezultat extends Entitate {
                 interes.getOferta().getTipOferta() == TipOferta.VANZARE
                         ? TipRezultat.VANZARE
                         : TipRezultat.INCHIRIERE;
+        // The application transaction must commit the reservation and new result together.
         interes.getOferta().rezerva(id);
         interes.intraInTranzactie();
         participanti.add(new AgentRezultat(1, agent, this));
@@ -50,6 +118,7 @@ public class Rezultat extends Entitate {
     }
 
     public void adaugaAgentRezultat(Agent agent) {
+        necesitaPersistentaCompleta();
         Reguli.cere(
                 Set.of(
                                 StareRezultat.INITIAT,
@@ -68,6 +137,7 @@ public class Rezultat extends Entitate {
 
     public PropunerePret adaugaPropunere(
             BigDecimal suma, ParteNegociere parte, LocalDate data, String observatii) {
+        necesitaPersistentaCompleta();
         Reguli.cere(
                 stare == StareRezultat.INITIAT || stare == StareRezultat.NEGOCIERE,
                 "Negocierea nu este permisa!");
@@ -92,6 +162,7 @@ public class Rezultat extends Entitate {
     }
 
     public void acceptaPropunerea() {
+        necesitaPersistentaCompleta();
         Reguli.cere(stare == StareRezultat.NEGOCIERE, "Tranzactia nu este in negociere!");
         PropunerePret p = asteptare();
         p.accepta();
@@ -100,6 +171,7 @@ public class Rezultat extends Entitate {
     }
 
     public void respingePropunerea() {
+        necesitaPersistentaCompleta();
         Reguli.cere(stare == StareRezultat.NEGOCIERE, "Tranzactia nu este in negociere!");
         PropunerePret p = asteptare();
         p.respinge();
@@ -119,6 +191,7 @@ public class Rezultat extends Entitate {
     }
 
     public Contract pregatesteContract() {
+        necesitaPersistentaCompleta();
         Reguli.cere(
                 stare == StareRezultat.CONVENIT && contract == null,
                 "Contractul poate fi creat doar dupa acordul de pret!");
@@ -134,21 +207,25 @@ public class Rezultat extends Entitate {
             LocalDate inceput,
             LocalDate sfarsit,
             String clauze) {
+        necesitaPersistentaCompleta();
         verificaPregatire();
         contract.modificaConditii(metoda, avans, grafic, inceput, sfarsit, clauze);
     }
 
     public void trimiteContractLaNegociere() {
+        necesitaPersistentaCompleta();
         verificaPregatire();
         contract.trimiteLaNegociere();
     }
 
     public void convineContract() {
+        necesitaPersistentaCompleta();
         verificaPregatire();
         contract.convine();
     }
 
     public void semneazaContract(LocalDate data) {
+        necesitaPersistentaCompleta();
         verificaPregatire();
         Reguli.cere(data != null && !data.isBefore(dataRezultat), "Data semnarii este invalida!");
         contract.semneaza(data);
@@ -163,6 +240,7 @@ public class Rezultat extends Entitate {
     }
 
     public void stabilesteComisioane(BigDecimal cumparator, BigDecimal vanzator) {
+        necesitaPersistentaCompleta();
         Reguli.cere(
                 stare != StareRezultat.FINALIZAT && stare != StareRezultat.ANULAT,
                 "Tranzactia este inchisa!");
@@ -178,16 +256,19 @@ public class Rezultat extends Entitate {
     }
 
     public void inregistreazaPlataAvans() {
+        necesitaPersistentaCompleta();
         verificaSemnat();
         contract.inregistreazaPlataAvans();
     }
 
     public void inregistreazaPlataComisionCumparator() {
+        necesitaPersistentaCompleta();
         verificaSemnat();
         comisionCumparatorPlatit = true;
     }
 
     public void inregistreazaPlataComisionVanzator() {
+        necesitaPersistentaCompleta();
         verificaSemnat();
         comisionVanzatorPlatit = true;
     }
@@ -202,6 +283,7 @@ public class Rezultat extends Entitate {
     }
 
     public void finalizeaza(LocalDate data) {
+        necesitaPersistentaCompleta();
         verificaSemnat();
         Reguli.cere(
                 data != null && !data.isBefore(dataRezultat) && !data.isBefore(contract.getDataSemnare()),
@@ -229,7 +311,11 @@ public class Rezultat extends Entitate {
         dataFinalizare = data;
     }
 
+    // Release the reservation and restore the interest in the same application transaction.
     public void anuleaza(String motiv, LocalDate data) {
+        Reguli.cere(
+                !persistentaMinima || stare == StareRezultat.INITIAT,
+                "Doar tranzactiile initiate pot fi anulate in aceasta etapa.");
         Reguli.cere(
                 stare != StareRezultat.SEMNAT
                         && stare != StareRezultat.FINALIZAT
@@ -250,6 +336,7 @@ public class Rezultat extends Entitate {
     }
 
     public void incheieInchiriere() {
+        necesitaPersistentaCompleta();
         Reguli.cere(
                 stare == StareRezultat.FINALIZAT && tipRezultat == TipRezultat.INCHIRIERE,
                 "Nu exista inchiriere finalizata!");
@@ -257,6 +344,7 @@ public class Rezultat extends Entitate {
     }
 
     public void reziliazaInchiriere(String motiv) {
+        necesitaPersistentaCompleta();
         Reguli.cere(
                 stare == StareRezultat.FINALIZAT
                         && tipRezultat == TipRezultat.INCHIRIERE
