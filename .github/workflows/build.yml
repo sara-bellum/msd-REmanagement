@@ -46,10 +46,10 @@ jobs:
       # Linux requires execute permission for the wrapper script.
       - name: Allow Maven Wrapper to execute
         run: chmod +x mvnw
+      - name: Build and run all tests
+        run: ./mvnw --batch-mode clean verify
       - name: Show test failure details
         if: failure()
         run: |
           find target/surefire-reports -name '*.txt' \
             -exec cat {} \;
-      - name: Build and run all tests
-        run: ./mvnw --batch-mode clean verify
