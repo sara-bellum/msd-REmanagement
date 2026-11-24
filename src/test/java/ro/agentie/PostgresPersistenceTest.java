@@ -475,4 +475,9 @@ class PostgresPersistenceTest {
                     return null;
                 });
     }
+//    SELECT domain_id, pret_listare, created_at, updated_at, version
+//FROM public.oferte
+//WHERE domain_id = (
+//    SELECT oferta_vanzare_id FROM public.demo_dataset WHERE id = 1
+//);
 }
